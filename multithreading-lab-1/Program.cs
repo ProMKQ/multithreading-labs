@@ -22,7 +22,6 @@ static void Lab1()
     Console.ReadKey(true);
 
     Console.WriteLine("Потік Lab1 почав виконання");
-
     Stopwatch stopwatch = Stopwatch.StartNew();
     
     T1 t1 = new();
@@ -54,7 +53,7 @@ class T1() : Data.ALabThread(1)
     // Обчислення
     protected override void ComputeFunction()
     {
-
+        // A = B * (MA * MD) * d
     }
 
     // Виведення
@@ -76,7 +75,7 @@ class T2() : Data.ALabThread(2)
     // Обчислення
     protected override void ComputeFunction()
     {
-
+        // MF = MAX(MG) * (MH * MK)
     }
 
     // Виведення
@@ -98,7 +97,7 @@ class T3() : Data.ALabThread(3)
     // Обчислення
     protected override void ComputeFunction()
     {
-
+        // T = P * MO + (S * (MR * MS))
     }
 
     // Виведення
@@ -156,6 +155,45 @@ static class Data
         public void Join() => thread.Join();
     }
 
+
+    public static Matrix<T> ParseMatrixFromConsole<T>(int rows, int columns, string name)
+        where T : INumber<T>, IParsable<T>
+    {
+        Console.WriteLine($"Введіть матрицю {name} ({rows}x{columns}):");
+
+        Matrix<T> matrix = new(rows, columns);
+
+        int i = 0;
+        while (i < rows)
+        {
+            Console.Write($"{name}[{i + 1}]: ");
+            string? input = Console.ReadLine();
+            if (input is null)
+            {
+                break;
+            }
+
+            string[] values = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (values.Length != columns)
+            {
+                Console.WriteLine($"Очікувалось {columns} значень, але отримано {values.Length}.");
+                continue;
+            }
+
+            Span<T> row = matrix.GetRowSpan(i);
+            for (int j = 0; j < columns; j++)
+            {
+                if (!T.TryParse(values[j], null, out T? value))
+                {
+                    Console.WriteLine($"Невірний {nameof(T)} '{values[j]}'.");
+                    continue;
+                }
+                row[j] = value;
+            }
+        }
+
+        return matrix;
+    }
 
     public class Matrix<T>(int rows, int columns)
         where T : INumber<T>
