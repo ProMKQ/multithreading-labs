@@ -1,13 +1,162 @@
-﻿using System.Numerics;
+﻿/*
+ * Лабораторна робота ЛР1 Варіант 8
+ * F1: A  = B * (MA * MD) * d
+ * F2: MF = MAX(MG) * (MH * MK)
+ * F3: T  = P * MO + (S * (MR * MS))
+
+ * Комаров Максим ІМ-31
+ * Дата 18.02.2026
+*/
+
+using System.Diagnostics;
+using System.Numerics;
 using System.Text;
+
+const int N = 3;
+
+Lab1();
 
 static void Lab1()
 {
+    Console.WriteLine("Натисніть будь-яку клавішу, щоб почати виконання програми\n");
+    Console.ReadKey(true);
 
+    Console.WriteLine("Потік Lab1 почав виконання");
+
+    Stopwatch stopwatch = Stopwatch.StartNew();
+    
+    T1 t1 = new();
+    T2 t2 = new();
+    T3 t3 = new();
+
+    t1.Start();
+    t2.Start();
+    t3.Start();
+
+    t1.Join();
+    t2.Join();
+    t3.Join();
+
+    double elapsed = stopwatch.Elapsed.TotalSeconds;
+    Console.WriteLine($"Потік Lab1 закінчив виконання після {elapsed:0.###} секунд");
 }
+
+
+class T1() : Data.ALabThread(1)
+{
+
+    // Введення
+    protected override void ReadInput()
+    {
+        
+    }
+
+    // Обчислення
+    protected override void ComputeFunction()
+    {
+
+    }
+
+    // Виведення
+    protected override void WriteOutput()
+    {
+
+    }
+}
+
+class T2() : Data.ALabThread(2)
+{
+
+    // Введення
+    protected override void ReadInput()
+    {
+
+    }
+
+    // Обчислення
+    protected override void ComputeFunction()
+    {
+
+    }
+
+    // Виведення
+    protected override void WriteOutput()
+    {
+
+    }
+}
+
+class T3() : Data.ALabThread(3)
+{
+
+    // Введення
+    protected override void ReadInput()
+    {
+
+    }
+
+    // Обчислення
+    protected override void ComputeFunction()
+    {
+
+    }
+
+    // Виведення
+    protected override void WriteOutput()
+    {
+
+    }
+}
+
 
 static class Data
 {
+    public abstract class ALabThread
+    {
+        protected readonly int ID;
+
+        protected readonly Thread thread;
+
+        protected abstract void ReadInput();
+        protected abstract void ComputeFunction();
+        protected abstract void WriteOutput();
+
+        protected ALabThread(int id)
+        {
+            ID = id;
+            thread = new(Main)
+            {
+                Priority = ThreadPriority.Highest
+            };
+        }
+
+        private void Main()
+        {
+            Console.WriteLine($"Потік T{ID} почав виконання");
+
+            Console.WriteLine($"Потік T{ID} почав ввід даних");
+            ReadInput();
+            Console.WriteLine($"Потік T{ID} завершив ввід даних");
+
+            Console.WriteLine($"Потік T{ID} почав обчислення функції F{ID}");
+            ComputeFunction();
+            Console.WriteLine($"Потік T{ID} завершив обчислення функції F{ID}");
+
+            Thread.Sleep(TimeSpan.FromSeconds(1));
+
+            Console.WriteLine($"Потік T{ID} почав вивід даних");
+            WriteOutput();
+            Console.WriteLine($"Потік T{ID} завершив вивід даних");
+
+            Console.WriteLine($"Потік T{ID} завершив виконання");
+        }
+
+        public void Start() => thread.Start();
+
+        public void Join() => thread.Join();
+    }
+
+
     public class Matrix<T>(int rows, int columns)
         where T : INumber<T>
     {
@@ -16,12 +165,6 @@ static class Data
 
         public int Rows { get; } = rows;
         public int Columns { get; } = columns;
-
-        public T this[int row, int col]
-        {
-            get => Elements[row * Columns + col];
-            set => Elements[row * Columns + col] = value;
-        }
 
         public Span<T> GetRowSpan(int row) => Elements.AsSpan(row * Columns, Columns);
 
@@ -47,7 +190,7 @@ static class Data
         {
             if (left.Columns != right.Rows)
             {
-                throw new ArgumentException("Left columns must equal right rows.");
+                throw new ArgumentException("Left column count must equal right row count.");
             }
 
             Matrix<T> result = new(left.Rows, right.Columns);
