@@ -15,8 +15,7 @@ using System.Text;
 
 static class Data
 {
-    public class Matrix<T>(int rows, int columns)
-        where T : INumber<T>
+    public class Matrix<T>(int rows, int columns) where T : INumber<T>
     {
         private readonly T[] Elements = (rows > 0 && columns > 0) ? new T[rows * columns]
             : throw new ArgumentOutOfRangeException("Matrix dimensions must be positive.");
@@ -34,9 +33,7 @@ static class Data
             }
 
             Matrix<T> result = new(left.Rows, left.Columns);
-            int elementCount = left.Rows * left.Columns;
-
-            for (int i = 0; i < elementCount; i++)
+            for (int i = 0; i < left.Rows * left.Columns; i++)
             {
                 result.Elements[i] = left.Elements[i] + right.Elements[i];
             }
@@ -73,6 +70,17 @@ static class Data
                         resultRow[j] += scalar * rightRow[j];
                     }
                 }
+            }
+
+            return result;
+        }
+
+        public static Matrix<T> operator *(Matrix<T> matrix, T scalar)
+        {
+            Matrix<T> result = new(matrix.Rows, matrix.Columns);
+            for (int i = 0; i < matrix.Rows * matrix.Columns; i++)
+            {
+                result.Elements[i] = matrix.Elements[i] * scalar;
             }
 
             return result;
@@ -116,14 +124,42 @@ static class Data
                 sb.AppendLine();
             }
 
-            return sb.ToString();
+            return sb.ToString().TrimEnd();
         }
     }
 
-    public static Matrix<T> ParseMatrixFromConsole<T>(int rows, int columns, string name)
-    where T : INumber<T>, IParsable<T>
+    private static bool TryParseRow<T>(string input, Span<T> row) where T : INumber<T>, IParsable<T>
     {
-        Console.WriteLine($"Введіть матрицю {name} ({rows}x{columns}):");
+        string[] values = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (values.Length != row.Length)
+        {
+            Console.WriteLine($"Очікувалось {row.Length} значень, але отримано {values.Length}.");
+            return false;
+        }
+
+        for (int i = 0; i < row.Length; i++)
+        {
+            if (!T.TryParse(values[i], null, out T? value))
+            {
+                Console.WriteLine($"Невірне значення '{values[i]}'.");
+                return false;
+            }
+            row[i] = value;
+        }
+
+        return true;
+    }
+
+    public static Matrix<T> ParseMatrixFromConsole<T>(int rows, int columns, string name) where T : INumber<T>, IParsable<T>
+    {
+        if (rows == 1)
+        {
+            Console.WriteLine($"Введіть вектор {name} ({columns} елементів):");
+        }
+        else
+        {
+            Console.WriteLine($"Введіть матрицю {name} ({rows} рядків по {columns} елементів):");
+        }
 
         Matrix<T> matrix = new(rows, columns);
 
@@ -134,29 +170,36 @@ static class Data
             string? input = Console.ReadLine();
             if (input is null)
             {
-                break;
-            }
-
-            string[] values = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (values.Length != columns)
-            {
-                Console.WriteLine($"Очікувалось {columns} значень, але отримано {values.Length}.");
                 continue;
             }
 
             Span<T> row = matrix.GetRowSpan(i);
-            for (int j = 0; j < columns; j++)
+            if (TryParseRow(input, row))
             {
-                if (!T.TryParse(values[j], null, out T? value))
-                {
-                    Console.WriteLine($"Невірний {nameof(T)} '{values[j]}'.");
-                    continue;
-                }
-                row[j] = value;
+                i++;
             }
         }
 
         return matrix;
+    }
+
+    public static T ParseScalarFromConsole<T>(string name) where T : INumber<T>, IParsable<T>
+    {
+        while (true)
+        {
+            Console.Write($"Введіть скаляр {name}: ");
+            string? input = Console.ReadLine();
+            if (input is null)
+            {
+                continue;
+            }
+
+            if (T.TryParse(input, null, out T? value))
+            {
+                return value;
+            }
+            Console.WriteLine($"Невірне значення '{input}'.");
+        }
     }
 
 
@@ -181,23 +224,22 @@ static class Data
 
         private void Main()
         {
-            Console.WriteLine($"Потік T{ID} почав виконання");
+            Console.WriteLine($"[T{ID}] почав виконання");
 
-            Console.WriteLine($"Потік T{ID} почав ввід даних");
+            Console.WriteLine($"[T{ID}] почав ввід даних");
             ReadInput();
-            Console.WriteLine($"Потік T{ID} завершив ввід даних");
+            Console.WriteLine($"[T{ID}] завершив ввід даних");
 
-            Console.WriteLine($"Потік T{ID} почав обчислення функції F{ID}");
+            Console.WriteLine($"[T{ID}] почав обчислення функції F{ID}");
             ComputeFunction();
-            Console.WriteLine($"Потік T{ID} завершив обчислення функції F{ID}");
+            Thread.Sleep(1000);
+            Console.WriteLine($"[T{ID}] завершив обчислення функції F{ID}");
 
-            Thread.Sleep(TimeSpan.FromSeconds(1));
-
-            Console.WriteLine($"Потік T{ID} почав вивід даних");
+            Console.WriteLine($"[T{ID}] почав вивід даних");
             WriteOutput();
-            Console.WriteLine($"Потік T{ID} завершив вивід даних");
+            Console.WriteLine($"[T{ID}] завершив вивід даних");
 
-            Console.WriteLine($"Потік T{ID} завершив виконання");
+            Console.WriteLine($"[T{ID}] завершив виконання");
         }
 
         public void Start() => thread.Start();
@@ -213,23 +255,31 @@ internal class Program
 
     class T1() : Data.ALabThread(1)
     {
-        private Data.Matrix<int> A = new(N, N);
+        private Data.Matrix<int>? A;
+        private Data.Matrix<int>? B;
+        private Data.Matrix<int>? MA;
+        private Data.Matrix<int>? MD;
+        private int d;
+
         // Введення
         protected override void ReadInput()
         {
-
+            B = Data.ParseMatrixFromConsole<int>(1, N, nameof(B));
+            MA = Data.ParseMatrixFromConsole<int>(N, N, nameof(MA));
+            MD = Data.ParseMatrixFromConsole<int>(N, N, nameof(MD));
+            d = Data.ParseScalarFromConsole<int>(nameof(d));
         }
 
         // Обчислення
         protected override void ComputeFunction()
         {
-            // A = B * (MA * MD) * d
+            A = B! * (MA! * MD!) * d;
         }
 
         // Виведення
         protected override void WriteOutput()
         {
-
+            Console.WriteLine($"[T{ID}] Результат: A =\n{A}");
         }
     }
 
@@ -277,12 +327,14 @@ internal class Program
         }
     }
 
-    private static void Lab1()
+    static void Lab1()
     {
+        Console.OutputEncoding = new UTF8Encoding();
+
         Console.WriteLine("Натисніть будь-яку клавішу, щоб почати виконання програми\n");
         Console.ReadKey(true);
 
-        Console.WriteLine("Потік Lab1 почав виконання");
+        Console.WriteLine("[Lab1] почав виконання");
         Stopwatch stopwatch = Stopwatch.StartNew();
 
         T1 t1 = new();
@@ -298,7 +350,7 @@ internal class Program
         t3.Join();
 
         double elapsed = stopwatch.Elapsed.TotalSeconds;
-        Console.WriteLine($"Потік Lab1 закінчив виконання після {elapsed:0.###} секунд");
+        Console.WriteLine($"[Lab1] закінчив виконання після {elapsed:0.###} секунд");
     }
 
     private static void Main()
