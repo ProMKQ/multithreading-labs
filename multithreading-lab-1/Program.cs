@@ -86,22 +86,20 @@ static class Data
             return result;
         }
 
-        public static Matrix<T> Max(Matrix<T> left, Matrix<T> right)
+        public static Matrix<T> operator *(T scalar, Matrix<T> matrix) => matrix * scalar;
+
+        public static T Max(Matrix<T> matrix)
         {
-            if (left.Rows != right.Rows || left.Columns != right.Columns)
+            T max = matrix.Elements[0];
+            for (int i = 1; i < matrix.Rows * matrix.Columns; i++)
             {
-                throw new ArgumentException("Matrices must have the same dimensions.");
+                if (matrix.Elements[i] > max)
+                {
+                    max = matrix.Elements[i];
+                }
             }
 
-            Matrix<T> result = new(left.Rows, left.Columns);
-            int elementCount = left.Rows * left.Columns;
-
-            for (int i = 0; i < elementCount; i++)
-            {
-                result.Elements[i] = T.Max(left.Elements[i], right.Elements[i]);
-            }
-
-            return result;
+            return max;
         }
 
         public override string ToString()
@@ -285,29 +283,34 @@ internal class Program
 
     class T2() : Data.ALabThread(2)
     {
+        private Data.Matrix<int>? MF;
+        private Data.Matrix<int>? MG;
+        private Data.Matrix<int>? MD;
+        private Data.Matrix<int>? MK;
 
         // Введення
         protected override void ReadInput()
         {
-
+            MG = Data.ParseMatrixFromConsole<int>(N, N, nameof(MG));
+            MD = Data.ParseMatrixFromConsole<int>(N, N, nameof(MD));
+            MK = Data.ParseMatrixFromConsole<int>(N, N, nameof(MK));
         }
 
         // Обчислення
         protected override void ComputeFunction()
         {
-            // MF = MAX(MG) * (MH * MK)
+            MF = Data.Matrix<int>.Max(MG!) * (MD! * MK!);
         }
 
         // Виведення
         protected override void WriteOutput()
         {
-
+            Console.WriteLine($"[T{ID}] Результат: MF =\n{MF}");
         }
     }
 
     class T3() : Data.ALabThread(3)
     {
-
         // Введення
         protected override void ReadInput()
         {
