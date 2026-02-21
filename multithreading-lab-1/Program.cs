@@ -199,51 +199,51 @@ static class Data
             Console.WriteLine($"Невірне значення '{input}'.");
         }
     }
+}
 
 
-    public abstract class ALabThread
+public abstract class ALabThread
+{
+    protected readonly int ID;
+
+    protected readonly Thread thread;
+
+    protected abstract void ReadInput();
+    protected abstract void ComputeFunction();
+    protected abstract void WriteOutput();
+
+    protected ALabThread(int id)
     {
-        protected readonly int ID;
-
-        protected readonly Thread thread;
-
-        protected abstract void ReadInput();
-        protected abstract void ComputeFunction();
-        protected abstract void WriteOutput();
-
-        protected ALabThread(int id)
+        ID = id;
+        thread = new(Main)
         {
-            ID = id;
-            thread = new(Main)
-            {
-                Priority = ThreadPriority.Highest
-            };
-        }
-
-        private void Main()
-        {
-            Console.WriteLine($"[T{ID}] почав виконання");
-
-            Console.WriteLine($"[T{ID}] почав ввід даних");
-            ReadInput();
-            Console.WriteLine($"[T{ID}] завершив ввід даних");
-
-            Console.WriteLine($"[T{ID}] почав обчислення функції F{ID}");
-            ComputeFunction();
-            Thread.Sleep(1000);
-            Console.WriteLine($"[T{ID}] завершив обчислення функції F{ID}");
-
-            Console.WriteLine($"[T{ID}] почав вивід даних");
-            WriteOutput();
-            Console.WriteLine($"[T{ID}] завершив вивід даних");
-
-            Console.WriteLine($"[T{ID}] завершив виконання");
-        }
-
-        public void Start() => thread.Start();
-
-        public void Join() => thread.Join();
+            Priority = ThreadPriority.Highest
+        };
     }
+
+    private void Main()
+    {
+        Console.WriteLine($"[T{ID}] почав виконання");
+
+        Console.WriteLine($"[T{ID}] почав ввід даних");
+        ReadInput();
+        Console.WriteLine($"[T{ID}] завершив ввід даних");
+
+        Console.WriteLine($"[T{ID}] почав обчислення функції F{ID}");
+        ComputeFunction();
+        Thread.Sleep(1000);
+        Console.WriteLine($"[T{ID}] завершив обчислення функції F{ID}");
+
+        Console.WriteLine($"[T{ID}] почав вивід даних");
+        WriteOutput();
+        Console.WriteLine($"[T{ID}] завершив вивід даних");
+
+        Console.WriteLine($"[T{ID}] завершив виконання");
+    }
+
+    public void Start() => thread.Start();
+
+    public void Join() => thread.Join();
 }
 
 
@@ -251,7 +251,7 @@ internal class Program
 {
     const int N = 3;
 
-    class T1() : Data.ALabThread(1)
+    class T1() : ALabThread(1)
     {
         private Data.Matrix<int>? A;
         private Data.Matrix<int>? B;
@@ -281,25 +281,25 @@ internal class Program
         }
     }
 
-    class T2() : Data.ALabThread(2)
+    class T2() : ALabThread(2)
     {
         private Data.Matrix<int>? MF;
         private Data.Matrix<int>? MG;
-        private Data.Matrix<int>? MD;
+        private Data.Matrix<int>? MH;
         private Data.Matrix<int>? MK;
 
         // Введення
         protected override void ReadInput()
         {
             MG = Data.ParseMatrixFromConsole<int>(N, N, nameof(MG));
-            MD = Data.ParseMatrixFromConsole<int>(N, N, nameof(MD));
+            MH = Data.ParseMatrixFromConsole<int>(N, N, nameof(MH));
             MK = Data.ParseMatrixFromConsole<int>(N, N, nameof(MK));
         }
 
         // Обчислення
         protected override void ComputeFunction()
         {
-            MF = Data.Matrix<int>.Max(MG!) * (MD! * MK!);
+            MF = Data.Matrix<int>.Max(MG!) * (MH! * MK!);
         }
 
         // Виведення
@@ -309,24 +309,35 @@ internal class Program
         }
     }
 
-    class T3() : Data.ALabThread(3)
+    class T3() : ALabThread(3)
     {
+        private Data.Matrix<int>? T;
+        private Data.Matrix<int>? P;
+        private Data.Matrix<int>? MO;
+        private Data.Matrix<int>? S;
+        private Data.Matrix<int>? MR;
+        private Data.Matrix<int>? MS;
+
         // Введення
         protected override void ReadInput()
         {
-
+            P = Data.ParseMatrixFromConsole<int>(1, N, nameof(P));
+            MO = Data.ParseMatrixFromConsole<int>(N, N, nameof(MO));
+            S = Data.ParseMatrixFromConsole<int>(1, N, nameof(S));
+            MR = Data.ParseMatrixFromConsole<int>(N, N, nameof(MR));
+            MS = Data.ParseMatrixFromConsole<int>(N, N, nameof(MS));
         }
 
         // Обчислення
         protected override void ComputeFunction()
         {
-            // T = P * MO + (S * (MR * MS))
+            T = P! * MO! + (S! * (MR! * MS!));
         }
 
         // Виведення
         protected override void WriteOutput()
         {
-
+            Console.WriteLine($"[T{ID}] Результат: T =\n{T}");
         }
     }
 
