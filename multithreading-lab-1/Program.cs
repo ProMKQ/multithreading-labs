@@ -15,6 +15,9 @@ using System.Text;
 
 static class Data
 {
+    public static bool AutomaticFill;
+    private static readonly Random random = new();
+
     public class Matrix<T>(int rows, int columns) where T : INumber<T>
     {
         private readonly T[] Elements = (rows > 0 && columns > 0) ? new T[rows * columns]
@@ -102,6 +105,17 @@ static class Data
             return max;
         }
 
+        public static Matrix<T> Random(int rows, int columns, int min, int max)
+        {
+            Matrix<T> result = new(rows, columns);
+            for (int i = 1; i < rows * columns; i++)
+            {
+                result.Elements[i] = T.CreateChecked(random.Next(min, max));
+            }
+
+            return result;
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new(Rows * Columns * 4);
@@ -148,8 +162,13 @@ static class Data
         return true;
     }
 
-    public static Matrix<T> ParseMatrixFromConsole<T>(int rows, int columns, string name) where T : INumber<T>, IParsable<T>
+    public static Matrix<T> FillMatrix<T>(int rows, int columns, string name) where T : INumber<T>, IParsable<T>
     {
+        if (AutomaticFill)
+        {
+            return Matrix<T>.Random(rows, columns, -20, 20);
+        }
+
         if (rows == 1)
         {
             Console.WriteLine($"Введіть вектор {name} ({columns} елементів):");
@@ -161,31 +180,31 @@ static class Data
 
         Matrix<T> matrix = new(rows, columns);
 
-        int i = 0;
-        while (i < rows)
+        int row = 0;
+        while (row < rows)
         {
-            Console.Write($"{name}[{i + 1}]: ");
+            Console.Write($"{name}[{row + 1}]: ");
             string? input = Console.ReadLine();
             if (input is null)
             {
                 continue;
             }
 
-            Span<T> row = matrix.GetRowSpan(i);
-            if (TryParseRow(input, row))
+            Span<T> rowSpan = matrix.GetRowSpan(row);
+            if (TryParseRow(input, rowSpan))
             {
-                i++;
+                row++;
             }
         }
 
         return matrix;
     }
 
-    public static T ParseScalarFromConsole<T>(string name) where T : INumber<T>, IParsable<T>
+    public static T ParseValue<T>(string name) where T : INumber<T>, IParsable<T>
     {
         while (true)
         {
-            Console.Write($"Введіть скаляр {name}: ");
+            Console.Write($"Введіть значення {name}: ");
             string? input = Console.ReadLine();
             if (input is null)
             {
@@ -198,6 +217,16 @@ static class Data
             }
             Console.WriteLine($"Невірне значення '{input}'.");
         }
+    }
+
+    public static T FillValue<T>(string name) where T : INumber<T>, IParsable<T>
+    {
+        if (AutomaticFill)
+        {
+            return T.CreateChecked(random.Next(-20, 20));
+        }
+
+        return ParseValue<T>(name);
     }
 }
 
@@ -217,7 +246,7 @@ public abstract class ALabThread
         ID = id;
         thread = new(Main)
         {
-            Priority = ThreadPriority.Highest
+            Priority = ThreadPriority.AboveNormal
         };
     }
 
@@ -249,7 +278,7 @@ public abstract class ALabThread
 
 internal class Program
 {
-    const int N = 3;
+    static int N;
 
     class T1() : ALabThread(1)
     {
@@ -262,10 +291,10 @@ internal class Program
         // Введення
         protected override void ReadInput()
         {
-            B = Data.ParseMatrixFromConsole<int>(1, N, nameof(B));
-            MA = Data.ParseMatrixFromConsole<int>(N, N, nameof(MA));
-            MD = Data.ParseMatrixFromConsole<int>(N, N, nameof(MD));
-            d = Data.ParseScalarFromConsole<int>(nameof(d));
+            B = Data.FillMatrix<int>(1, N, nameof(B));
+            MA = Data.FillMatrix<int>(N, N, nameof(MA));
+            MD = Data.FillMatrix<int>(N, N, nameof(MD));
+            d = Data.FillValue<int>(nameof(d));
         }
 
         // Обчислення
@@ -291,9 +320,9 @@ internal class Program
         // Введення
         protected override void ReadInput()
         {
-            MG = Data.ParseMatrixFromConsole<int>(N, N, nameof(MG));
-            MH = Data.ParseMatrixFromConsole<int>(N, N, nameof(MH));
-            MK = Data.ParseMatrixFromConsole<int>(N, N, nameof(MK));
+            MG = Data.FillMatrix<int>(N, N, nameof(MG));
+            MH = Data.FillMatrix<int>(N, N, nameof(MH));
+            MK = Data.FillMatrix<int>(N, N, nameof(MK));
         }
 
         // Обчислення
@@ -321,11 +350,11 @@ internal class Program
         // Введення
         protected override void ReadInput()
         {
-            P = Data.ParseMatrixFromConsole<int>(1, N, nameof(P));
-            MO = Data.ParseMatrixFromConsole<int>(N, N, nameof(MO));
-            S = Data.ParseMatrixFromConsole<int>(1, N, nameof(S));
-            MR = Data.ParseMatrixFromConsole<int>(N, N, nameof(MR));
-            MS = Data.ParseMatrixFromConsole<int>(N, N, nameof(MS));
+            P = Data.FillMatrix<int>(1, N, nameof(P));
+            MO = Data.FillMatrix<int>(N, N, nameof(MO));
+            S = Data.FillMatrix<int>(1, N, nameof(S));
+            MR = Data.FillMatrix<int>(N, N, nameof(MR));
+            MS = Data.FillMatrix<int>(N, N, nameof(MS));
         }
 
         // Обчислення
@@ -344,6 +373,10 @@ internal class Program
     static void Lab1()
     {
         Console.OutputEncoding = new UTF8Encoding();
+
+        N = Data.ParseValue<int>(nameof(N));
+        Data.AutomaticFill = N > 5;
+        Console.WriteLine();
 
         Console.WriteLine("Натисніть будь-яку клавішу, щоб почати виконання програми\n");
         Console.ReadKey(true);
