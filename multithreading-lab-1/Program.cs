@@ -13,9 +13,10 @@ using System.Numerics;
 using System.Text;
 
 
-static class Data
+internal static class Data
 {
     public static bool AutomaticFill;
+    public static bool OutputResults;
     private static readonly Random random = new();
 
     public class Matrix<T>(int rows, int columns) where T : INumber<T>
@@ -127,22 +128,22 @@ static class Data
                 for (int x = 0; x < Columns; x++)
                 {
                     sb.Append(row[x]);
-                    if (x < Columns - 1)
-                    {
-                        sb.Append('\t');
-                    }
+                    sb.Append('\t');
                 }
 
+                sb.Length--;
                 sb.AppendLine();
             }
 
-            return sb.ToString().TrimEnd();
+            sb.Length--;
+            return sb.ToString();
         }
     }
 
     private static bool TryParseRow<T>(string input, Span<T> row) where T : INumber<T>, IParsable<T>
     {
         string[] values = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
         if (values.Length != row.Length)
         {
             Console.WriteLine($"Очікувалось {row.Length} значень, але отримано {values.Length}.");
@@ -156,6 +157,7 @@ static class Data
                 Console.WriteLine($"Невірне значення '{values[i]}'.");
                 return false;
             }
+
             row[i] = value;
         }
 
@@ -183,8 +185,9 @@ static class Data
         int row = 0;
         while (row < rows)
         {
-            Console.Write($"{name}[{row + 1}]: ");
+            Console.Write($"{name}[{row}]: ");
             string? input = Console.ReadLine();
+
             if (input is null)
             {
                 continue;
@@ -206,6 +209,7 @@ static class Data
         {
             Console.Write($"Введіть значення {name}: ");
             string? input = Console.ReadLine();
+
             if (input is null)
             {
                 continue;
@@ -215,6 +219,7 @@ static class Data
             {
                 return value;
             }
+
             Console.WriteLine($"Невірне значення '{input}'.");
         }
     }
@@ -256,18 +261,20 @@ public abstract class ALabThread
 
         Console.WriteLine($"[T{ID}] почав ввід даних");
         ReadInput();
-        Console.WriteLine($"[T{ID}] завершив ввід даних");
+        Console.WriteLine($"[T{ID}] закінчив ввід даних");
 
         Console.WriteLine($"[T{ID}] почав обчислення функції F{ID}");
         ComputeFunction();
-        Thread.Sleep(1000);
-        Console.WriteLine($"[T{ID}] завершив обчислення функції F{ID}");
+        Console.WriteLine($"[T{ID}] закінчив обчислення функції F{ID}");
 
-        Console.WriteLine($"[T{ID}] почав вивід даних");
-        WriteOutput();
-        Console.WriteLine($"[T{ID}] завершив вивід даних");
+        if (Data.OutputResults)
+        {
+            Console.WriteLine($"[T{ID}] почав вивід даних");
+            WriteOutput();
+            Console.WriteLine($"[T{ID}] закінчив вивід даних");
+        }
 
-        Console.WriteLine($"[T{ID}] завершив виконання");
+        Console.WriteLine($"[T{ID}] закінчив виконання");
     }
 
     public void Start() => thread.Start();
@@ -278,14 +285,11 @@ public abstract class ALabThread
 
 internal class Program
 {
-    static int N;
+    private static int N;
 
-    class T1() : ALabThread(1)
+    private class T1() : ALabThread(1)
     {
-        private Data.Matrix<int>? A;
-        private Data.Matrix<int>? B;
-        private Data.Matrix<int>? MA;
-        private Data.Matrix<int>? MD;
+        private Data.Matrix<int>? A, B, MA, MD;
         private int d;
 
         // Введення
@@ -297,7 +301,7 @@ internal class Program
             d = Data.FillValue<int>(nameof(d));
         }
 
-        // Обчислення
+        // Обчислення F1
         protected override void ComputeFunction()
         {
             A = B! * (MA! * MD!) * d;
@@ -310,12 +314,9 @@ internal class Program
         }
     }
 
-    class T2() : ALabThread(2)
+    private class T2() : ALabThread(2)
     {
-        private Data.Matrix<int>? MF;
-        private Data.Matrix<int>? MG;
-        private Data.Matrix<int>? MH;
-        private Data.Matrix<int>? MK;
+        private Data.Matrix<int>? MF, MG, MH, MK;
 
         // Введення
         protected override void ReadInput()
@@ -325,7 +326,7 @@ internal class Program
             MK = Data.FillMatrix<int>(N, N, nameof(MK));
         }
 
-        // Обчислення
+        // Обчислення F2
         protected override void ComputeFunction()
         {
             MF = Data.Matrix<int>.Max(MG!) * (MH! * MK!);
@@ -338,14 +339,9 @@ internal class Program
         }
     }
 
-    class T3() : ALabThread(3)
+    private class T3() : ALabThread(3)
     {
-        private Data.Matrix<int>? T;
-        private Data.Matrix<int>? P;
-        private Data.Matrix<int>? MO;
-        private Data.Matrix<int>? S;
-        private Data.Matrix<int>? MR;
-        private Data.Matrix<int>? MS;
+        private Data.Matrix<int>? T, P, MO, S, MR, MS;
 
         // Введення
         protected override void ReadInput()
@@ -357,7 +353,7 @@ internal class Program
             MS = Data.FillMatrix<int>(N, N, nameof(MS));
         }
 
-        // Обчислення
+        // Обчислення F3
         protected override void ComputeFunction()
         {
             T = P! * MO! + (S! * (MR! * MS!));
@@ -370,34 +366,38 @@ internal class Program
         }
     }
 
-    static void Lab1()
+    private static void Lab1()
     {
         Console.OutputEncoding = new UTF8Encoding();
 
-        N = Data.ParseValue<int>(nameof(N));
+        N = (int)Data.ParseValue<uint>(nameof(N));
         Data.AutomaticFill = N > 5;
-        Console.WriteLine();
+        Data.OutputResults = N <= 15;
 
-        Console.WriteLine("Натисніть будь-яку клавішу, щоб почати виконання програми\n");
+        Console.WriteLine("\nНатисніть будь-яку клавішу, щоб почати виконання програми\n");
         Console.ReadKey(true);
 
         Console.WriteLine("[Lab1] почав виконання");
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        T1 t1 = new();
-        T2 t2 = new();
-        T3 t3 = new();
+        ALabThread[] threads = [new T1(), new T2(), new T3()];
 
-        t1.Start();
-        t2.Start();
-        t3.Start();
-
-        t1.Join();
-        t2.Join();
-        t3.Join();
+        foreach (ALabThread thread in threads)
+        {
+            thread.Start();
+        }
+        foreach (ALabThread thread in threads)
+        {
+            thread.Join(); 
+        }
 
         double elapsed = stopwatch.Elapsed.TotalSeconds;
-        Console.WriteLine($"[Lab1] закінчив виконання після {elapsed:0.###} секунд");
+        Console.WriteLine($"[Lab1] закінчив виконання");
+
+        if (Data.AutomaticFill)
+        {
+            Console.WriteLine($"Час виконання: {elapsed:0.###} секунд");
+        }
     }
 
     private static void Main()
