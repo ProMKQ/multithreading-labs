@@ -92,14 +92,14 @@ internal static class Data
 
         public static Matrix<T> operator *(T scalar, Matrix<T> matrix) => matrix * scalar;
 
-        public static T Max(Matrix<T> matrix)
+        public T Max()
         {
-            T max = matrix.Elements[0];
-            for (int i = 1; i < matrix.Rows * matrix.Columns; i++)
+            T max = Elements[0];
+            for (int i = 1; i < Rows * Columns; i++)
             {
-                if (matrix.Elements[i] > max)
+                if (Elements[i] > max)
                 {
-                    max = matrix.Elements[i];
+                    max = Elements[i];
                 }
             }
 
@@ -125,17 +125,21 @@ internal static class Data
             {
                 ReadOnlySpan<T> row = GetRowSpan(y);
 
-                for (int x = 0; x < Columns; x++)
+                if (y > 0)
                 {
-                    sb.Append(row[x]);
-                    sb.Append('\t');
+                    sb.AppendLine();
                 }
 
-                sb.Length--;
-                sb.AppendLine();
+                for (int x = 0; x < Columns; x++)
+                {
+                    if (x > 0)
+                    {
+                        sb.Append('\t');
+                    }
+                    sb.Append(row[x]);
+                }
             }
 
-            sb.Length--;
             return sb.ToString();
         }
     }
@@ -251,7 +255,7 @@ public abstract class ALabThread
         ID = id;
         thread = new(Main)
         {
-            Priority = ThreadPriority.AboveNormal
+            Priority = ThreadPriority.AboveNormal,
         };
     }
 
@@ -329,7 +333,7 @@ internal class Program
         // Обчислення F2
         protected override void ComputeFunction()
         {
-            MF = Data.Matrix<int>.Max(MG!) * (MH! * MK!);
+            MF = MG!.Max() * (MH! * MK!);
         }
 
         // Виведення
